@@ -1,0 +1,24 @@
+# builds e arquivos da máquina
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+*.apk
+
+# chave que assina o APK: fica guardada à parte (sem ela, versões novas não instalam por cima da antiga)
+*.keystore
+*.jks
+
+# dados intermediários, fontes de terceiros e gabaritos dos workflows (o banco final é web/questoes.js)
+dados/fontes/
+dados/trabalho/
+dados/privado/
+__pycache__/
+
+# ferramentas locais
+.remember/
+.claude-flow/
+.impeccable/
+.superpowers/
+.claude/*
+!.claude/launch.json

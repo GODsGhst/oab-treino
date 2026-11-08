@@ -1,0 +1,288 @@
+/* OAB Treino — tema escuro para tela AMOLED. Tamanho da letra: o app.js muda o font-size do <html> (18–26px). */
+:root {
+  --preto: #000000;
+  --grafite: #0F0F11;
+  --grafite-2: #17171B;
+  --linha: #24242A;
+  --texto: #ECE8E1;
+  --texto-2: #A39E96;
+  --ouro: #D4B26A;
+  --ouro-suave: rgba(212, 178, 106, 0.13);
+  --ouro-borda: rgba(212, 178, 106, 0.5);
+  --toga: #0F1E3D;
+  --certo: #5CCB8F;
+  --certo-suave: rgba(92, 203, 143, 0.12);
+  --errado: #F07A72;
+  --errado-suave: rgba(240, 122, 114, 0.12);
+  --aviso: #E8B94A;
+  --aviso-suave: rgba(232, 185, 74, 0.1);
+  --serifa: "Noto Serif", Georgia, "Times New Roman", serif;
+  --sans: Roboto, "Segoe UI", system-ui, sans-serif;
+  --raio: 16px;
+  --rapida: 120ms;
+  --media: 260ms;
+  --lenta: 520ms;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: 20px; background: var(--preto); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--preto);
+  color: var(--texto);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overflow-wrap: break-word; /* parte só palavra que não cabe sozinha na linha (com hífen, abaixo) */
+  hyphens: auto;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--ouro); outline-offset: 3px; }
+h1[tabindex="-1"]:focus-visible { outline: none; } /* o título recebe o foco ao trocar de tela, mas não é botão */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- estrutura ---------- */
+.tela { max-width: 680px; margin: 0 auto; padding: 20px 18px 24px; min-height: 100vh; }
+.topo { display: flex; align-items: center; justify-content: space-between; min-height: 3rem; margin: 0 0 1.1rem; }
+.voltar {
+  display: inline-flex; align-items: center; min-height: 3rem; padding: 0 0.6rem 0 0; flex: none; white-space: nowrap;
+  background: none; border: 0; color: var(--texto-2); font-size: 0.9rem;
+}
+.voltar svg { width: 1.25rem; height: 1.25rem; margin-right: 0.3rem; }
+.progresso { color: var(--texto-2); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.titulo { font-family: var(--serifa); font-weight: 400; font-size: 1.5rem; line-height: 1.25; margin: 0 0 0.35rem; }
+.sub { color: var(--texto-2); font-size: 0.9rem; margin: 0 0 1.4rem; }
+.grupo-titulo { font-family: var(--serifa); font-weight: 400; color: var(--texto-2); font-size: 1rem; margin: 1.8rem 0 0.6rem; }
+.vazio { color: var(--texto-2); margin: 1rem 0 0; }
+
+/* barra de ação fixa no rodapé: o botão principal fica sempre ao alcance do polegar */
+.barra {
+  position: sticky; bottom: 0; z-index: 2;
+  margin: 1.6rem -18px 0; padding: 1.4rem 18px 16px;
+  background: linear-gradient(to top, var(--preto) 72%, rgba(0, 0, 0, 0));
+}
+.barra .btn + .btn { margin-top: 0.7rem; }
+/* Anterior/Próxima lado a lado; com letra grande em tela estreita, descem um embaixo do outro em vez de partir a palavra */
+.barra-sim { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.barra-sim .btn { flex: 1 1 auto; width: auto; white-space: nowrap; padding-left: 0.9rem; padding-right: 0.9rem; }
+.barra-sim .btn + .btn { margin-top: 0; }
+
+/* ---------- botões ---------- */
+.btn {
+  display: block; width: 100%; min-height: 3.1rem; padding: 0.65rem 1.3rem;
+  border-radius: 999px; border: 1px solid transparent; font-weight: 500; text-align: center;
+  transition: transform var(--rapida) ease-out, background-color var(--media), color var(--media), opacity var(--media);
+}
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn-ouro { background: var(--ouro); color: #000; }
+.btn-ouro:disabled { background: var(--linha); color: var(--texto-2); cursor: default; }
+.btn-linha { background: transparent; color: var(--texto); border-color: var(--linha); }
+.btn-linha:disabled { opacity: 0.4; cursor: default; }
+.btn-perigo { background: transparent; color: var(--errado); border-color: rgba(240, 122, 114, 0.45); }
+
+/* ---------- carregando ---------- */
+.carregando { min-height: 100vh; display: grid; place-content: center; text-align: center; padding: 24px; }
+.carregando .saudacao { margin: 0 0 0.6rem; }
+.carregando p { color: var(--texto-2); margin: 0; }
+
+/* ---------- início ---------- */
+.inicio { position: relative; isolation: isolate; } /* isolation: o brilho (z-index -1) fica acima do fundo preto do body */
+.inicio::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 22rem; z-index: -1; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% -25%, var(--toga) 0%, rgba(15, 30, 61, 0.38) 48%, rgba(0, 0, 0, 0) 78%);
+}
+.saudacao { font-family: var(--serifa); font-weight: 400; font-size: 2.2rem; line-height: 1.12; letter-spacing: -0.01em; margin: 2.2rem 0 0.9rem; }
+.fio { width: 4.2rem; height: 2px; background: var(--ouro); transform-origin: left center; }
+.frase { color: var(--texto-2); margin: 0.9rem 0 0; max-width: 30rem; }
+.hoje { margin: 1.3rem 0 0; }
+/* a saudação já está na tela de carregamento: na abertura, só o fio dourado se desenha e o resto aparece */
+.animar .fio { animation: desenhar var(--lenta) 120ms ease-out both; }
+.animar .depois { animation: surgir 420ms 380ms ease-out both; }
+
+.continuar {
+  display: block; width: 100%; text-align: left; margin: 1.6rem 0 0; padding: 1rem 1.2rem;
+  border-radius: 20px; border: 1px solid var(--ouro-borda); background: var(--ouro-suave);
+}
+.continuar-titulo { display: block; color: var(--ouro); font-family: var(--serifa); font-size: 1.15rem; }
+.continuar-desc { display: block; color: var(--texto-2); font-size: 0.85rem; line-height: 1.45; }
+
+.menu { margin: 1.8rem 0 0; border: 1px solid var(--linha); border-radius: 22px; overflow: hidden; background: var(--grafite); }
+.menu-item {
+  display: flex; align-items: center; width: 100%; min-height: 4.4rem; padding: 0.95rem 1.1rem;
+  text-align: left; background: transparent; border: 0; border-top: 1px solid var(--linha);
+  transition: background-color var(--rapida);
+}
+.menu-item:first-child { border-top: 0; }
+.menu-item:active { background: var(--grafite-2); }
+.icone {
+  flex: none; width: 2.6rem; height: 2.6rem; margin-right: 1rem; border-radius: 50%;
+  border: 1px solid var(--ouro-borda); color: var(--ouro); display: grid; place-items: center;
+}
+.icone svg { width: 1.3rem; height: 1.3rem; }
+.menu-texto { flex: 1; min-width: 0; }
+.menu-titulo { display: block; font-weight: 500; font-size: 1.05rem; line-height: 1.3; }
+.menu-desc { display: block; color: var(--texto-2); font-size: 0.8rem; line-height: 1.4; margin-top: 0.15rem; }
+.contador {
+  flex: none; margin-left: 0.6rem; min-width: 1.9rem; height: 1.9rem; padding: 0 0.5rem; border-radius: 999px;
+  background: var(--ouro-suave); color: var(--ouro); font-size: 0.8rem; display: grid; place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fonte { display: flex; align-items: center; justify-content: space-between; margin: 1.6rem 0 0; color: var(--texto-2); font-size: 0.9rem; }
+.fonte-botoes button {
+  width: 3.2rem; height: 3.2rem; margin-left: 0.6rem; border-radius: 50%;
+  border: 1px solid var(--linha); background: var(--grafite); font-family: var(--serifa);
+}
+.fonte-botoes button:disabled { opacity: 0.35; cursor: default; }
+.fonte-menor { font-size: 0.85rem; }
+.fonte-maior { font-size: 1.2rem; }
+
+.rodape { margin: 3rem 0 0.5rem; text-align: center; color: var(--texto-2); font-size: 0.7rem; line-height: 1.55; }
+.rodape p { margin: 0; }
+.rodape .para { font-family: var(--serifa); color: var(--texto); font-size: 0.85rem; margin-bottom: 0.2rem; }
+
+/* ---------- listas ---------- */
+.lista { list-style: none; margin: 0; padding: 0; border: 1px solid var(--linha); border-radius: 20px; overflow: hidden; background: var(--grafite); }
+.lista li + li { border-top: 1px solid var(--linha); }
+.linha {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 3.5rem;
+  padding: 0.7rem 1.1rem; background: none; border: 0; text-align: left; transition: background-color var(--rapida);
+}
+.linha:active:not(:disabled) { background: var(--grafite-2); }
+.linha:disabled { opacity: 0.42; cursor: default; }
+.linha > span:first-child { min-width: 0; padding-right: 0.8rem; }
+.qtd { flex: none; color: var(--texto-2); font-size: 0.85rem; font-variant-numeric: tabular-nums; text-align: right; }
+.marca { flex: none; font-size: 0.85rem; }
+.marca.ok { color: var(--certo); }
+.marca.nao { color: var(--errado); }
+.marca.branco { color: var(--texto-2); }
+
+.opcao-qtd + .opcao-qtd { margin-top: 0.75rem; }
+
+/* ---------- questão ---------- */
+.materia { font-family: var(--serifa); font-weight: 400; color: var(--ouro); font-size: 1.05rem; margin: 0; }
+.origem { color: var(--texto-2); font-size: 0.82rem; margin: 0.1rem 0 1.1rem; }
+.enunciado p, .alt-texto p, .comentario p { margin: 0 0 0.7rem; }
+.enunciado p:last-child, .alt-texto p:last-child, .comentario p:last-child { margin-bottom: 0; }
+.faixa-aviso {
+  margin: 0 0 1.1rem; padding: 0.8rem 1rem; border-radius: 12px; font-size: 0.88rem;
+  border: 1px solid rgba(232, 185, 74, 0.4); background: var(--aviso-suave);
+}
+.faixa-aviso strong { color: var(--aviso); font-weight: 500; }
+
+.alternativas { list-style: none; margin: 1.4rem 0 0; padding: 0; }
+.alternativas li + li { margin-top: 0.75rem; }
+.alt {
+  display: grid; grid-template-columns: auto 1fr; align-items: start; width: 100%;
+  padding: 0.85rem 1rem; text-align: left; background: var(--grafite);
+  border: 1px solid var(--linha); border-radius: var(--raio);
+  transition: border-color var(--media), background-color var(--media);
+}
+.alt:disabled { cursor: default; }
+.letra {
+  width: 2.2rem; height: 2.2rem; margin-right: 0.9rem; border-radius: 50%;
+  border: 1.5px solid var(--ouro-borda); color: var(--ouro);
+  display: grid; place-items: center; font-family: var(--serifa); font-size: 1rem; line-height: 1;
+  transition: background-color var(--media), color var(--media), border-color var(--media);
+}
+.alt-texto { padding-top: 0.2rem; }
+.alt.escolhida { border-color: var(--ouro); background: var(--ouro-suave); }
+.alt.escolhida .letra { background: var(--ouro); border-color: var(--ouro); color: #000; }
+.alt.certa { border-color: var(--certo); background: var(--certo-suave); }
+.alt.certa .letra { background: var(--certo); border-color: var(--certo); color: #000; }
+.alt.errada { border-color: var(--errado); background: var(--errado-suave); }
+.alt.errada .letra { background: var(--errado); border-color: var(--errado); color: #000; }
+.revelando .alt.certa .letra { animation: pulso 440ms ease-out; }
+.revelando .alt.errada { animation: tremer 340ms ease-in-out; }
+
+/* explicação abaixo de cada alternativa: abre em sequência ao confirmar */
+.explica { grid-column: 2; display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--media) ease-out; }
+.explica > span { overflow: hidden; }
+.explica-texto { display: block; padding-top: 0.6rem; font-size: 0.92rem; line-height: 1.55; color: var(--texto); }
+.aberta .explica { grid-template-rows: 1fr; transition-delay: calc(var(--i) * 70ms); }
+.v-certa { color: var(--certo); font-weight: 500; }
+.v-errada { color: var(--errado); font-weight: 500; }
+
+.veredito {
+  display: flex; align-items: center; margin: 1.3rem 0 0; padding: 0.9rem 1.1rem; border-radius: var(--raio);
+  font-family: var(--serifa); font-size: 1.15rem; line-height: 1.35; scroll-margin-top: 16px;
+}
+.veredito svg { flex: none; width: 1.5rem; height: 1.5rem; margin-right: 0.7rem; }
+.veredito.ok { background: var(--certo-suave); color: var(--certo); }
+.veredito.nao { background: var(--errado-suave); color: var(--errado); }
+
+.comentario { margin: 1.4rem 0 0; padding: 1rem 1.1rem; border: 1px solid var(--linha); border-radius: var(--raio); background: var(--grafite); font-size: 0.92rem; line-height: 1.6; }
+.comentario h2 { font-family: var(--serifa); font-weight: 400; font-size: 1.05rem; color: var(--ouro); margin: 0 0 0.5rem; }
+.pegadinha { margin: 1.2rem 0 0; padding: 0.85rem 1rem; border: 1px solid rgba(232, 185, 74, 0.32); background: var(--aviso-suave); border-radius: 12px; }
+.pegadinha strong { display: flex; align-items: center; color: var(--aviso); font-weight: 500; }
+.pegadinha strong svg { width: 1.15rem; height: 1.15rem; margin-right: 0.4rem; }
+.pegadinha p { margin: 0.3rem 0 0; font-size: 0.92rem; }
+details.base { margin: 1rem 0 0; border: 1px solid var(--linha); border-radius: 12px; padding: 0 1rem; }
+details.base summary { min-height: 3rem; display: flex; align-items: center; color: var(--texto-2); cursor: pointer; font-size: 0.9rem; list-style: none; }
+details.base summary::-webkit-details-marker { display: none; }
+/* seta desenhada à mão: com display:flex o Chrome deixa de mostrar o triângulo padrão */
+details.base summary::after {
+  content: ""; margin-left: auto; width: 0.55rem; height: 0.55rem;
+  border-right: 2px solid var(--texto-2); border-bottom: 2px solid var(--texto-2);
+  transform: translateY(-25%) rotate(45deg); transition: transform var(--media);
+}
+details.base[open] summary::after { transform: translateY(25%) rotate(-135deg); }
+details.base p { margin: 0 0 0.9rem; font-size: 0.88rem; color: var(--texto); }
+.aviso-ia { color: var(--texto-2); font-size: 0.74rem; margin: 1rem 0 0; }
+
+/* ---------- simulado ---------- */
+.relogio { flex: 1; min-width: 0; padding: 0 0.4rem; color: var(--texto-2); font-size: 0.85rem; font-variant-numeric: tabular-nums; text-align: center; }
+.relogio.esgotado { color: var(--aviso); }
+.btn-mapa {
+  display: inline-flex; align-items: center; min-height: 3rem; padding: 0 0 0 0.6rem; flex: none; white-space: nowrap;
+  background: none; border: 0; color: var(--ouro); font-size: 0.9rem;
+}
+.btn-mapa svg { width: 1.2rem; height: 1.2rem; margin-right: 0.35rem; }
+.progresso-sim { color: var(--texto-2); font-size: 0.85rem; margin: 0 0 0.4rem; font-variant-numeric: tabular-nums; }
+.mapa { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.1rem, 1fr)); gap: 0.5rem; }
+.mapa button {
+  height: 3.1rem; border-radius: 12px; border: 1px solid var(--linha); background: var(--grafite);
+  color: var(--texto-2); font-size: 0.85rem; font-variant-numeric: tabular-nums;
+}
+.mapa .feita { background: var(--ouro-suave); color: var(--ouro); border-color: var(--ouro-borda); }
+.mapa .atual { outline: 2px solid var(--ouro); outline-offset: 1px; }
+
+.nota { font-family: var(--serifa); font-size: 3.6rem; line-height: 1; margin: 1.2rem 0 0.4rem; font-variant-numeric: tabular-nums; }
+.nota small { font-size: 1.2rem; color: var(--texto-2); }
+.selo { display: inline-flex; align-items: center; margin: 0.4rem 0 0; padding: 0.4rem 0.95rem; border-radius: 999px; font-weight: 500; }
+.selo svg { width: 1.15rem; height: 1.15rem; margin-right: 0.4rem; }
+.selo.ok { background: var(--certo-suave); color: var(--certo); }
+.selo.nao { background: var(--errado-suave); color: var(--errado); font-weight: 400; }
+.barras { list-style: none; margin: 0; padding: 0; }
+.barras li + li { margin-top: 0.95rem; }
+.barra-rotulo { display: flex; justify-content: space-between; font-size: 0.9rem; }
+.barra-rotulo span:last-child { flex: none; padding-left: 0.8rem; color: var(--texto-2); font-variant-numeric: tabular-nums; }
+.barra-trilho { height: 8px; margin-top: 0.4rem; background: var(--linha); border-radius: 999px; overflow: hidden; }
+.barra-cheia { height: 100%; background: var(--ouro); border-radius: 999px; transform-origin: left center; animation: encher 600ms ease-out both; }
+
+/* ---------- diálogo ---------- */
+dialog {
+  width: min(92vw, 520px); padding: 1.4rem; border-radius: 22px;
+  border: 1px solid var(--linha); background: var(--grafite); color: var(--texto);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
+dialog p { margin: 0 0 1.3rem; font-size: 1.02rem; }
+dialog .btn + .btn { margin-top: 0.7rem; }
+
+/* ---------- movimento ---------- */
+.entrar { animation: entrar 220ms ease-out both; }
+@keyframes entrar { from { opacity: 0; transform: translateY(4px); } }
+@keyframes surgir { from { opacity: 0; transform: translateY(6px); } }
+@keyframes desenhar { from { transform: scaleX(0); } }
+@keyframes encher { from { transform: scaleX(0); } }
+@keyframes pulso { 45% { transform: scale(1.12); } }
+@keyframes tremer { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.sem-animacao *, .sem-animacao *::before, .sem-animacao *::after { animation: none !important; transition: none !important; }
