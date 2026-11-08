@@ -10,8 +10,9 @@
   const salvo = () => JSON.parse(localStorage.getItem('oab-treino:v1') || '{}')
   const focoNoH1 = () => !!document.activeElement && document.activeElement.tagName === 'H1'
   const nH1 = () => document.querySelectorAll('h1').length
-  const comecarMini = async (materia, n) => {
-    await ir('#/simulado/mini/' + materia)
+  const comecarMini = async (materia, n) => { // pelo caminho de verdade: início → Fazer simulado → Mini → matéria
+    await ir('#/'); await clicar('.menu-item[data-para="#/simulado"]', 450)
+    await clicar('[data-para="#/simulado/mini"]', 450); await clicar(`[data-para="#/simulado/mini/${materia}"]`, 450)
     await clicar(`[data-n="${n}"]`, 450)
     if (document.querySelector('dialog .btn-perigo')) await clicar('dialog .btn-perigo', 450) // simulado anterior
     if (document.querySelector('dialog')) await clicar('dialog .btn-ouro', 450) // aviso "só existem N"
@@ -70,5 +71,38 @@
   const saiu = location.hash !== '#/simulado'
   r.d3_entregarPeloMapaSemVoltarMorto = (noResultado && noMenu && saiu) || { noResultado, noMenu, saiu, hash: location.hash }
   r.d5b_h1NoSimuladoENaRevisao = (h1Fazendo && h1Revisar) || { h1Fazendo, h1Revisar }
+
+  // (7) por qualquer caminho, o menu do simulado fica logo antes da questão: Pausar cai nele e o Voltar seguinte sai dele
+  const descartarSePerguntar = async () => { if (document.querySelector('dialog .btn-perigo')) await clicar('dialog .btn-perigo', 550) }
+  const pausarEVoltar = async () => {
+    await clicar('[data-acao="voltar"]', 450) // Pausar
+    const menu = location.hash === '#/simulado'
+    await voltar()
+    return { menu, depois: location.hash }
+  }
+  const abrirMenu = async () => { await ir('#/'); await clicar('.menu-item[data-para="#/simulado"]', 450) }
+  await abrirMenu(); await clicar('[data-para="#/simulado/prova"]', 450)
+  await clicar('[data-acao="sim-iniciar"][data-tipo="prova"]', 550); await descartarSePerguntar()
+  const prova = await pausarEVoltar()
+  await abrirMenu(); await clicar('[data-para="#/simulado/mini"]', 450); await clicar('[data-para="#/simulado/mini/civil"]', 450)
+  await clicar('[data-n="10"]', 550); await descartarSePerguntar()
+  const mini = await pausarEVoltar()
+  await ir('#/'); await clicar('.continuar', 550) // cartão "Continuar simulado" do início
+  const continuarInicio = await pausarEVoltar()
+  await abrirMenu(); await clicar('[data-para="#/simulado/mini"]', 450); await clicar('[data-para="#/simulado/mini/civil"]', 450)
+  await clicar('[data-n="10"]', 550); await clicar('dialog .btn-ouro', 550) // "Continuar o simulado"
+  const continuarDialogo = await pausarEVoltar()
+  const casos7 = { prova, mini, continuarInicio, continuarDialogo }
+  r.d7_menuLogoAntesDaQuestao = Object.values(casos7).every(x => x.menu && x.depois === '#/') || casos7
+
+  // (8) "Fazer outro simulado" volta ao menu sem empilhar outro: o Voltar seguinte sai dele
+  await abrirMenu()
+  await clicar('[data-acao="sim-iniciar"][data-tipo="completo"]', 650); await descartarSePerguntar()
+  await clicar('.btn-mapa', 450); await clicar('[data-acao="sim-entregar"]'); await clicar('dialog .btn-ouro', 650)
+  const outro = [...document.querySelectorAll('.barra .btn')].find(b => /Fazer outro simulado/.test(b.textContent))
+  if (outro) { outro.click(); await espera(450) }
+  const noMenu8 = location.hash === '#/simulado'
+  await voltar()
+  r.d8_fazerOutroSemEmpilhar = (!!outro && noMenu8 && location.hash === '#/') || { botao: !!outro, noMenu8, depois: location.hash }
   return r
 })()

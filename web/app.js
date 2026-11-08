@@ -33,6 +33,7 @@
   let estado = L.estadoVazio()
   let treino = null // { rota, titulo, sessao, escolhida, acertos, revelar }
   let ultimaRota = null
+  let rotaAnterior = null // a tela de onde se chegou à atual (o app não tem "avançar", então é a entrada anterior do histórico)
   let saudacaoAnimada = false
   let relogio = null
   let ultimoTick = 0
@@ -95,7 +96,7 @@
       ${contador ? `<span class="contador" aria-hidden="true">${contador}</span>` : ''}
     </button>`
   const cartaoContinuar = (sim) => `
-    <button class="continuar" data-acao="ir" data-para="#/simulado/fazendo">
+    <button class="continuar" data-acao="sim-continuar">
       <span class="continuar-titulo">Continuar simulado</span>
       <span class="continuar-desc">${esc(descreverSimulado(sim))}, ${respondidas(sim)} de ${sim.ids.length} respondidas</span>
     </button>`
@@ -358,7 +359,7 @@
         ${materias.length > 1 ? `<h2 class="grupo-titulo">Por matéria</h2><ul class="barras">${materias.map((m) => barra(m.nome, r.porMateria[m.chave].acertos, r.porMateria[m.chave].total)).join('')}</ul>` : ''}
         <h2 class="grupo-titulo">Questão por questão</h2>
         <ul class="lista">${sim.ids.map((id, i) => linhaRevisao(sim, id, i)).join('')}</ul>
-        <div class="barra"><button class="btn btn-ouro" data-acao="ir" data-para="#/simulado">Fazer outro simulado</button></div>
+        <div class="barra"><button class="btn btn-ouro" data-acao="voltar">Fazer outro simulado</button></div>
       </div>`
   }
 
@@ -442,9 +443,7 @@
       const abrir = () => {
         estado.simulado = L.novoSimulado(opcoes, r.ids)
         salvar()
-        // a tela anterior ao simulado passa a ser o menu do simulado: Pausar e o Voltar do resultado caem lá
-        if (location.hash !== '#/simulado') history.replaceState(null, '', '#/simulado')
-        ir('#/simulado/fazendo')
+        irParaSimulado()
       }
       if (opcoes.tipo === 'mini' && r.faltaram > 0) {
         aviso(`Só existem ${plural(r.ids.length, 'questão', 'questões')} desta matéria — o simulado vai ter ${r.ids.length}.`, abrir)
@@ -453,9 +452,27 @@
     const atual = simEmAndamento()
     if (!atual) return comecar()
     perguntar(`Você tem um simulado em andamento (respondeu ${respondidas(atual)} de ${atual.ids.length}). Descartar e começar outro?`, [
-      { texto: 'Continuar o simulado', estilo: 'btn-ouro', acao: () => ir('#/simulado/fazendo') },
+      { texto: 'Continuar o simulado', estilo: 'btn-ouro', acao: irParaSimulado },
       { texto: 'Descartar e começar outro', estilo: 'btn-perigo', acao: comecar },
     ])
+  }
+
+  // a questão do simulado sempre fica logo depois do menu do simulado no histórico: Pausar e o Voltar do resultado
+  // caem no menu, e o Voltar seguinte sai dele, sem repetir telas
+  function irParaSimulado() {
+    const h = location.hash
+    if (h === '#/simulado') return ir('#/simulado/fazendo')
+    // [menu, lista de provas]: troca a lista pela questão
+    if (h === '#/simulado/prova' && rotaAnterior === '#/simulado') return trocar('#/simulado/fazendo')
+    if (h.indexOf('#/simulado/mini/') === 0 && rotaAnterior === '#/simulado/mini') {
+      // [menu, lista do mini, quantidade]: volta para a lista e troca ela pela questão
+      depoisDeVoltar = '#/simulado/fazendo'
+      return history.back()
+    }
+    // outra tela do simulado vira o menu; de fora do simulado (cartão "Continuar simulado" do início), o menu entra antes
+    if (h.indexOf('#/simulado/') === 0) history.replaceState(null, '', '#/simulado')
+    else history.pushState(null, '', '#/simulado')
+    ir('#/simulado/fazendo')
   }
 
   function responderSim(letra) {
@@ -609,6 +626,7 @@
       const titulo = app.querySelector('h1')
       if (titulo) { titulo.setAttribute('tabindex', '-1'); titulo.focus({ preventScroll: true }) }
     }
+    if (rota !== ultimaRota) rotaAnterior = ultimaRota
     ultimaRota = rota
     if (p[0] === 'simulado' && (p[1] === 'fazendo' || p[1] === 'mapa')) iniciarRelogio()
     const nota = app.querySelector('[data-contar]')
@@ -634,6 +652,7 @@
         return proximaTreino()
       case 'recomecar': treino = null; return render({ animar: true })
       case 'sim-iniciar': return iniciarSimulado(opcoesDe(d))
+      case 'sim-continuar': return irParaSimulado()
       case 'sim-alt': return responderSim(d.letra)
       case 'sim-mover': return moverSim(+d.delta)
       case 'sim-ir': {

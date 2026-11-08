@@ -57,6 +57,7 @@ def limpar_explicacao(e):
     return e.strip()
 
 
+_MUDOU = re.compile(r"desatualiz|gabarito (da época|original)", re.I)
 _NEGATIVO = re.compile(r"incorret|exceto|salvo|errad|fals[ao]|não\s+(é|está|corresponde|se\s+aplica|constitui|pode)", re.I)
 
 
@@ -89,16 +90,18 @@ def aplicar_resultados(base, res):
             # incoerente porque o próprio modelo diz que, com a lei nova, outra alternativa também ficou certa
             fonte = next((c for c in candidatas if c and any("desatualiz" in (e or "").lower() for e in c["explicacoes"])), None)
             if fonte:
-                q["desatualizada"] = ("A lei mudou depois desta prova e hoje outra alternativa também estaria certa. "
-                                      "Veja as explicações.")
+                q["desatualizada"] = "Hoje outra alternativa também estaria certa. Veja as explicações."
         # o comentário da fonte julia (sem licença) não é publicado: a explicação revisada pelo Opus toma o lugar dele
         q["comentario"] = None
         if fonte:
             q["expl"] = [limpar_explicacao(e) for e in fonte["explicacoes"]]
             q["base_legal"] = fonte.get("base_legal") or None
             q["pegadinha"] = fonte.get("pegadinha") or None
+            # a explicação publicada diz que a lei mudou depois da prova: faixa no treino e fora dos simulados
+            if not q.get("desatualizada") and any(_MUDOU.search(e or "") for e in fonte["explicacoes"]):
+                q["desatualizada"] = "Veja nas explicações o que mudou."
         if opus and opus.get("veredito") == "desatualizada":
-            q["desatualizada"] = opus.get("motivo") or "A lei mudou depois desta prova."
+            q["desatualizada"] = opus.get("motivo") or "Veja nas explicações o que mudou."
         if opus and opus.get("veredito") == "gabarito_ok":
             q["armadilha"] = True  # derrubou modelos e o gabarito estava certo: pegadinha de verdade
         out.append(q)

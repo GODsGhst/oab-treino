@@ -318,6 +318,26 @@ def teste_explicacao_que_contradiz_o_gabarito_nao_entra():
     assert r[0]["expl"] == dupla and r[0]["desatualizada"]
 
 
+def teste_explicacao_que_diz_que_a_lei_mudou_marca_desatualizada():
+    import juntar as ju
+    base = [_of(n, None, certa=0) for n in range(1, 5)]
+    expl = lambda fim: ["Certa. Pelo gabarito." + fim, "Errada. não", "Errada. não", "Errada. não"]
+    rev = lambda id, fim: {"id": id, "ok": False, "problema": "x", "explicacoes": expl(fim), "base_legal": "b", "pegadinha": None}
+    res = {
+        "e40q1": {"auditoria": rev("e40q1", " Hoje a B também seria correta, então a questão está desatualizada.")},
+        "e40q2": {"auditoria": rev("e40q2", " Certa pelo gabarito da época, antes da Lei 13.467/2017.")},
+        "e40q3": {"auditoria": rev("e40q3", " Nada mudou.")},
+        "e40q4": {"auditoria": rev("e40q4", " A questão está desatualizada."),
+                  "opus": {"id": "e40q4", "veredito": "desatualizada", "explicacoes": expl(""), "base_legal": "x", "pegadinha": None,
+                           "motivo": "A Lei X mudou o art. Y."}},
+    }
+    r = {x["id"]: x for x in ju.aplicar_resultados(base, res)}
+    # a explicação publicada diz que a lei mudou: a questão leva a faixa e sai dos simulados
+    assert r["e40q1"]["desatualizada"] and r["e40q2"]["desatualizada"]
+    assert not r["e40q3"].get("desatualizada")
+    assert r["e40q4"]["desatualizada"] == "A Lei X mudou o art. Y."  # o motivo do Opus tem prioridade
+
+
 def teste_comentario_da_julia_nunca_e_publicado():
     import juntar as ju
     boa = ["Certa. sim", "Errada. não", "Errada. não", "Errada. não"]
